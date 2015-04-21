@@ -10,6 +10,10 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
 
         self.resize(550, 350)
+        screen = QtGui.QDesktopWidget().screenGeometry()
+        size = self.geometry()
+        self.move((screen.width()-size.width())/2,
+                  (screen.height()-size.height())/2)
         self.setWindowTitle('G-code parser')
         self.setWindowIcon(QtGui.QIcon('icon.png'))
 
@@ -17,17 +21,21 @@ class MainWindow(QtGui.QMainWindow):
         self.exit = QtGui.QAction(QtGui.QIcon('exit.png'), "Exit", self)
         self.exit.setShortcut('Ctrl+Q')
         self.exit.setStatusTip('Exit application')
-        self.connect(self.exit, QtCore.SIGNAL('triggered()'),
-                     QtGui.qApp, QtCore.SLOT('quit()'))
+        self.connect(self.exit, QtCore.SIGNAL('triggered()'), self.close)
 
         self.check = QtGui.QAction('Check', self)
         self.check.setShortcut('Ctrl+B')
         self.check.setStatusTip('Check code')
-        self.connect(self.check, QtCore.SIGNAL('triggered()'),
-                     self.check_func )
+        self.connect(self.check, QtCore.SIGNAL('triggered()'), self.check_func)
+
+        self.open = QtGui.QAction('Open', self)
+        self.open.setShortcut('Ctrl+O')
+        self.open.setStatusTip('Open file')
+        self.connect(self.open, QtCore.SIGNAL('triggered()'), self.showDialog)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
+        fl.addAction(self.open)
         fl.addAction(self.check)
         fl.addAction(self.exit)
         # end
@@ -43,6 +51,21 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(self.editor)
 
         self.statusBar().showMessage('Ready')
+
+    def showDialog(self):
+        fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes')
+        try:
+            fl = open(fl)
+            data = fl.read()
+            self.editor.setText(data)
+        except IOError:
+            print('Unable to open file')
+
+    def closeEvent(self, event):
+        reply = QtGui.QMessageBox.question(self, 'Message',
+         "Are you sure to quit?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes: event.accept()
+        else: event.ignore()
 
     def check_func(self):
         mass = gcode.gcode(str(self.editor.toPlainText()))
@@ -76,14 +99,14 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         self.highlightingRules.append(rule)
 
         # line (N10)
-        brush = QtGui.QBrush(QtCore.Qt.red, QtCore.Qt.SolidPattern)
+        brush = QtGui.QBrush(QtCore.Qt.green, QtCore.Qt.SolidPattern)
         line.setForeground(brush)
         pattern = QtCore.QRegExp("\\bN[0-9]+\\b")
         rule = HighlightingRule(pattern, line)
         self.highlightingRules.append(rule)
 
         # coordinates (X10.5 or Y5)
-        brush = QtGui.QBrush(QtCore.Qt.green)
+        brush = QtGui.QBrush(QtCore.Qt.red)
         coordinate.setForeground(brush)
         pattern = QtCore.QRegExp("\\b[XYZ][-+]?[0-9]+(\.[0-9]+)?\\b")
         rule = HighlightingRule(pattern, coordinate)
