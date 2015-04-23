@@ -1,8 +1,10 @@
 import sys
 import gcode
 
-
-from PyQt4 import QtGui, QtCore  # QtCore.QRegExp
+try:
+    from PyQt4 import QtGui, QtCore
+except ImportError:
+    sys.exit("Could not import PyQt4, you may try 'sudo apt-get install python-qt4'")
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -58,8 +60,8 @@ class MainWindow(QtGui.QMainWindow):
             fl = open(fl)
             data = fl.read()
             self.editor.setText(data)
-        except IOError:
-            print('Unable to open file')
+        except IOError:                           # TODO: message, not print
+            print('Unable to open file')          # TODO: or ask again
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Message',
@@ -68,9 +70,8 @@ class MainWindow(QtGui.QMainWindow):
         else: event.ignore()
 
     def check_func(self):
-        mass = gcode.gcode(str(self.editor.toPlainText()))
-        if mass.check(): print('Valid g-code')
-        else: print('Invalide g-code')
+        valid = gcode.gcode(str(self.editor.toPlainText())).check()
+        print(valid and "Valid g-code" or "Invalid g-code")    # TODO: message, not print
 
 
 class HighlightingRule(object):
@@ -85,12 +86,13 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         self.parent = parent
         main_command = QtGui.QTextCharFormat()
         line = QtGui.QTextCharFormat()
-        coordinate = QtGui.QTextCharFormat()
+        coor = QtGui.QTextCharFormat()
         comment = QtGui.QTextCharFormat()
+        error = QtGui.QTextCharFormat()
 
         self.highlightingRules = []
 
-        # main_command or tech_command (G10 G2)
+        # main_command or tech_command (G1 M107)
         brush = QtGui.QBrush(QtCore.Qt.darkBlue, QtCore.Qt.SolidPattern)
         main_command.setForeground(brush)
         main_command.setFontWeight(QtGui.QFont.Bold)
@@ -99,25 +101,32 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         self.highlightingRules.append(rule)
 
         # line (N10)
-        brush = QtGui.QBrush(QtCore.Qt.green, QtCore.Qt.SolidPattern)
+        brush = QtGui.QBrush(QtCore.Qt.darkMagenta, QtCore.Qt.SolidPattern)
         line.setForeground(brush)
         pattern = QtCore.QRegExp("\\bN[0-9]+\\b")
         rule = HighlightingRule(pattern, line)
         self.highlightingRules.append(rule)
 
         # coordinates (X10.5 or Y5)
-        brush = QtGui.QBrush(QtCore.Qt.red)
-        coordinate.setForeground(brush)
+        brush = QtGui.QBrush(QtCore.Qt.darkCyan)
+        coor.setForeground(brush)
         pattern = QtCore.QRegExp("\\b[XYZ][-+]?[0-9]+(\.[0-9]+)?\\b")
-        rule = HighlightingRule(pattern, coordinate)
+        rule = HighlightingRule(pattern, coor)
         self.highlightingRules.append(rule)
 
         # comment (; .... blah blah)
         brush = QtGui.QBrush(QtCore.Qt.darkYellow)
         comment.setForeground(brush)
-        pattern = QtCore.QRegExp(";.*")
+        pattern = QtCore.QRegExp(";\s.*")
         rule = HighlightingRule(pattern, comment)
         self.highlightingRules.append(rule)
+
+        # error
+        brush = QtGui.QBrush(QtCore.Qt.red)
+        error.setForeground(brush)
+        pattern = QtCore.QRegExp('(?!(^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$))') 
+        self.rule = HighlightingRule(pattern, error)
+
 
     def highlightBlock(self, text):
         for rule in self.highlightingRules:
@@ -127,10 +136,17 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
                 length = expression.matchedLength()
                 self.setFormat(index, length, rule.format)
                 index = text.indexOf(expression, index+length)
+        # highlight errors
+        exp = QtCore.QRegExp(self.rule.pattern)
+        index = expression.indexIn(text, 0)
+        if index >= 0:
+            self.setFormat(0, len(text), self.rule.format)
+
         self.setCurrentBlockState(0)
 
 
-app = QtGui.QApplication(sys.argv)
-main = MainWindow()
-main.show()
-app.exec_()
+if __name__ == "__main__":
+    app = QtGui.QApplication(sys.argv)
+    main = MainWindow()
+    main.show()
+    app.exec_()
