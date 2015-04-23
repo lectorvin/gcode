@@ -56,18 +56,17 @@ class MainWindow(QtGui.QMainWindow):
 
     def showDialog(self):
         fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes')
-        try:
-            fl = open(fl)
-            data = fl.read()
-            self.editor.setText(data)
-        except IOError:                           # TODO: message, not print
-            print('Unable to open file')          # TODO: or ask again
+        while 1:
+            try:
+                self.editor.setText(open(fl).read())
+                break
+            except IOError:
+                pass
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Message',
          "Are you sure to quit?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes: event.accept()
-        else: event.ignore()
+        reply == QtGui.QMessageBox.Yes and event.accept or event.ignore
 
     def check_func(self):
         valid = gcode.gcode(str(self.editor.toPlainText())).check()
@@ -124,7 +123,8 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         # error
         brush = QtGui.QBrush(QtCore.Qt.red)
         error.setForeground(brush)
-        pattern = QtCore.QRegExp('(?!(^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$))') 
+        # this pattern finds correct string
+        pattern = QtCore.QRegExp('^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$') 
         self.rule = HighlightingRule(pattern, error)
 
 
@@ -138,8 +138,8 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
                 index = text.indexOf(expression, index+length)
         # highlight errors
         exp = QtCore.QRegExp(self.rule.pattern)
-        index = expression.indexIn(text, 0)
-        if index >= 0:
+        index = exp.indexIn(text, 0)
+        if index < 0:          # if string isn't correct
             self.setFormat(0, len(text), self.rule.format)
 
         self.setCurrentBlockState(0)
