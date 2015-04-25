@@ -33,13 +33,24 @@ class MainWindow(QtGui.QMainWindow):
         self.open = QtGui.QAction('Open', self)
         self.open.setShortcut('Ctrl+O')
         self.open.setStatusTip('Open file')
-        self.connect(self.open, QtCore.SIGNAL('triggered()'), self.showDialog)
+        self.connect(self.open, QtCore.SIGNAL('triggered()'), self.openFile)
+
+        self.save = QtGui.QAction('Save as ..', self)
+        self.save.setShortcut('Ctrl+Shift+S')
+        self.save.setStatusTip('Save file as ..')
+        self.connect(self.save, QtCore.SIGNAL('triggered()'), self.saveFile)
+
+        self.del_com = QtGui.QAction('Delete all comments', self)
+        self.connect(self.del_com, QtCore.SIGNAL('triggered()'), self.delCom)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
         fl.addAction(self.open)
-        fl.addAction(self.check)
+        fl.addAction(self.save)
         fl.addAction(self.exit)
+        fl = menubar.addMenu('&Options')
+        fl.addAction(self.check)
+        fl.addAction(self.del_com)
         # end
 
         font = QtGui.QFont()
@@ -54,23 +65,32 @@ class MainWindow(QtGui.QMainWindow):
 
         self.statusBar().showMessage('Ready')
 
-    def showDialog(self):
-        fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes')
-        while 1:
-            try:
-                self.editor.setText(open(fl).read())
-                break
-            except IOError:
-                pass
+    def openFile(self):
+        fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes', \
+                             'Text Files (*.gcode *.txt)')
+        if fl:
+            self.editor.setText(open(fl).read())
+
+    def saveFile(self):
+        fl = QtGui.QFileDialog.getSaveFileName(self, 'Save as', './gcodes', \
+                                               '*.gcode')
+        if fl:
+            with open(fl, 'w') as f:
+                f.write(self.editor.toPlainText())
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Message',
-         "Are you sure to quit?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        reply == QtGui.QMessageBox.Yes and event.accept or event.ignore
+         "Are you sure to quit?", QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+        if reply == QtGui.QMessageBox.Yes: event.accept() 
+        else: event.ignore()
 
     def check_func(self):
         valid = gcode.gcode(str(self.editor.toPlainText())).check()
-        print(valid and "Valid g-code" or "Invalid g-code")    # TODO: message, not print
+        print(valid and "Valid g-code" or "Invalid g-code")
+        # TODO: message, not print
+
+    def delCom(self):
+        self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
 
 
 class HighlightingRule(object):
