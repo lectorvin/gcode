@@ -20,28 +20,20 @@ class MainWindow(QtGui.QMainWindow):
         self.setWindowIcon(QtGui.QIcon('icon.png'))
 
         # buttons start
-        self.exit = QtGui.QAction(QtGui.QIcon('exit.png'), "Exit", self)
-        self.exit.setShortcut('Ctrl+Q')
-        self.exit.setStatusTip('Exit application')
-        self.connect(self.exit, QtCore.SIGNAL('triggered()'), self.close)
-
-        self.check = QtGui.QAction('Check', self)
-        self.check.setShortcut('Ctrl+B')
-        self.check.setStatusTip('Check code')
-        self.connect(self.check, QtCore.SIGNAL('triggered()'), self.check_func)
-
-        self.open = QtGui.QAction('Open', self)
-        self.open.setShortcut('Ctrl+O')
-        self.open.setStatusTip('Open file')
-        self.connect(self.open, QtCore.SIGNAL('triggered()'), self.openFile)
-
-        self.save = QtGui.QAction('Save as ..', self)
-        self.save.setShortcut('Ctrl+Shift+S')
-        self.save.setStatusTip('Save file as ..')
-        self.connect(self.save, QtCore.SIGNAL('triggered()'), self.saveFile)
-
-        self.del_com = QtGui.QAction('Delete all comments', self)
-        self.connect(self.del_com, QtCore.SIGNAL('triggered()'), self.delCom)
+        self.open = QtGui.QAction('Open', self, shortcut='Ctrl+O',
+                     statusTip='Open file', triggered=self.openFile)
+        self.save = QtGui.QAction('Save as ..', self, shortcut='Ctrl+Shift+S',
+                     statusTip='Save file as ..', triggered=self.saveFile)
+        self.exit = QtGui.QAction(QtGui.QIcon('exit.png'), "Exit", self,
+                     shortcut='Ctrl+Q', statusTip='Exit application',
+                     triggered=self.close)
+        self.check = QtGui.QAction('Check', self, shortcut="Ctrl+B",
+                     statusTip='Check code', triggered=self.check_func)
+        self.del_com = QtGui.QAction('Delete all comments', self,
+                     statusTip='Delete all comments', triggered=self.delCom)
+        self.image = QtGui.QAction('Generate image', self, shortcut='Ctrl+G', 
+                     statusTip='Generate and save image',
+                     triggered=self.genImage)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
@@ -51,6 +43,7 @@ class MainWindow(QtGui.QMainWindow):
         fl = menubar.addMenu('&Options')
         fl.addAction(self.check)
         fl.addAction(self.del_com)
+        fl.addAction(self.image)
         # end
 
         font = QtGui.QFont()
@@ -91,6 +84,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def delCom(self):
         self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
+
+    def genImage(self):
+        gcode.gcode(str(self.editor.toPlainText())).saveImage()
 
 
 class HighlightingRule(object):

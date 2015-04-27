@@ -1,6 +1,7 @@
 import re
 import unittest
 import timeit
+import cairo
 
 
 class GcodeError(Exception):
@@ -30,6 +31,60 @@ class gcode(object):
             if line != "": temp.append(line)
         return "\n".join(temp)
         return temp
+
+    def get_coord(self):
+        result = []
+        blocks = map(str, self.del_comm().split('\n'))
+        coor = re.compile('[XYZ][+-]?[0-9]+(\.[0-9]+)?')
+        for line in blocks:
+            coord_line = False
+            comm = line.split()  
+            temp = []
+            for c in comm:
+                if c == 'G1':
+                    coord_line = True
+                if coord_line and coor.match(c):
+                    temp.append(c)
+            if temp:
+                result.append(temp)
+        return result
+
+    def saveImage(self):
+        gc = self.get_coord() 
+        coords = []
+        ymax = xmax = 0
+        ymin = xmin = 9999999
+        for line in gc:
+            temp = [None, None]
+            for c in line:
+                if c.startswith('X'):  
+                    temp[0] = float(c[1:])
+                    xmax = max(xmax, temp[0])
+                    xmin = min(xmin, temp[0])
+                elif c.startswith('Y'):
+                    temp[1] = float(c[1:])
+                    ymax = max(ymax, temp[1])
+                    ymin = min(ymin, temp[1])
+            if (temp[0] != None) and (temp[1] != None):
+                coords.append(temp)
+
+        width = int(xmax-xmin) + 1
+        height = int(ymax-ymin) + 1
+        im = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(im)
+        ctx.set_line_width(1)
+        ctx.set_source_rgba(0, 0, 0.5, 2)
+
+        x = coords[0][0] - xmin
+        y = coords[0][1] - ymin
+        for i in coords:
+            ctx.move_to(x,y)
+            if i[0] != None: x = i[0]-xmin
+            if i[1] != None: y = i[1]-ymin
+            ctx.line_to(x,y)
+        ctx.stroke()
+
+        im.write_to_png('test.png')
 
 
 if __name__ == "__main__":
