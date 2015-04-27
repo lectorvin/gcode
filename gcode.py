@@ -2,6 +2,7 @@ import re
 import unittest
 import timeit
 import cairo
+import d3d
 
 
 class GcodeError(Exception):
@@ -52,10 +53,10 @@ class gcode(object):
     def saveImage(self):
         gc = self.get_coord() 
         coords = []
-        ymax = xmax = 0
-        ymin = xmin = 9999999
+        zmax = ymax = xmax = 0
+        zmin = ymin = xmin = 9999
         for line in gc:
-            temp = [None, None]
+            temp = [None, None, None]
             for c in line:
                 if c.startswith('X'):  
                     temp[0] = float(c[1:])
@@ -65,26 +66,33 @@ class gcode(object):
                     temp[1] = float(c[1:])
                     ymax = max(ymax, temp[1])
                     ymin = min(ymin, temp[1])
-            if (temp[0] != None) and (temp[1] != None):
+                elif c.startswith('Z'):
+                    temp[2] = float(c[1:])
+                    zmax = max(zmax, temp[2])
+                    zmin = min(zmin, temp[2])
+            if (temp[0] != None) or (temp[1] != None) or (temp[2] != None):
+                try:
+                    if temp[0] == None: temp[0] = coords[-1][0]
+                except IndexError:
+                    pass
+                try:
+                    if temp[1] == None: temp[1] = coords[-1][1]
+                except IndexError:
+                    pass
+                try:
+                    if temp[2] == None: temp[2] = coords[-1][2]
+                except IndexError:
+                    pass
                 coords.append(temp)
 
-        width = int(xmax-xmin) + 1
-        height = int(ymax-ymin) + 1
-        im = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        ctx = cairo.Context(im)
-        ctx.set_line_width(1)
-        ctx.set_source_rgba(0, 0, 0.5, 2)
-
-        x = coords[0][0] - xmin
-        y = coords[0][1] - ymin
         for i in coords:
-            ctx.move_to(x,y)
-            if i[0] != None: x = i[0]-xmin
-            if i[1] != None: y = i[1]-ymin
-            ctx.line_to(x,y)
-        ctx.stroke()
-
-        im.write_to_png('test.png')
+            if i[0] == None: i[0] = xmin*2
+            if i[1] == None: i[1] = ymin*2
+            if i[2] == None: i[2] = zmin*2
+            i[0] -= xmin
+            i[1] -= ymin
+            i[2] -= zmin
+        d3d.main(coords)
 
 
 if __name__ == "__main__":
