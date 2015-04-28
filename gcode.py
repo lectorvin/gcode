@@ -10,6 +10,22 @@ class GcodeError(Exception):
         print('Not G-codes')
 
 
+def getLine(dot1, dot2):    # generate all dots of line
+    x1, y1, z1 = dot1
+    x2, y2, z2 = dot2
+    coords = []
+    x = x1
+    step = (x2-x1) / 10
+    while x < x2:
+        dot = [0,0,0]
+        dot[0] = x
+        dot[1] = float((x-x1)*(y2-y1)/(x2-x1)) + y1
+        dot[2] = float((x-x1)*(z2-z1)/(x2-x1)) + z1
+        coords.append(dot)
+        x += step
+    return coords
+
+
 class gcode(object):
     def __init__(self, text):
         self.text = str(text)
@@ -50,7 +66,7 @@ class gcode(object):
                 result.append(temp)
         return result
 
-    def saveImage(self):
+    def saveImage(self, fl):
         gc = self.get_coord() 
         coords = []
         zmax = ymax = xmax = 0
@@ -92,7 +108,16 @@ class gcode(object):
             i[0] -= xmin
             i[1] -= ymin
             i[2] -= zmin
-        d3d.main(coords)
+
+        dots = []
+        for i in range(len(coords)):
+            temp = []
+            if i != len(coords)-1:
+                temp = getLine(coords[i], coords[i+1])
+            if temp:
+                for y in temp:
+                    dots.append(y)
+        d3d.main(dots, str(fl))
 
 
 if __name__ == "__main__":

@@ -3,7 +3,8 @@
 # IPython.core.display -> IPython.display
 # TODO: try sys.version_info
 
-import pandas as pd, numpy as np, random
+import os
+import pandas as pd, numpy as np
 import matplotlib.pyplot as plt, matplotlib.cm as cm
 from mpl_toolkits.mplot3d import axes3d as Axes3D
 import IPython.core.display as IPdisplay
@@ -17,28 +18,12 @@ def get_points(points):
     df = df.drop(labels='', axis=1)
     return df
 
-def get_colors(color_request, length=1, color_reverse=False, default_color='r'):
-    color_list = []
-    if type(color_request) == list:
-        color_list = color_request        
-    elif type(color_request) == str:
-        if len(color_request) == 1:
-            color_list = [color_request]
-            default_color = color_request
-        elif len(color_request) > 1:
-            color_map = cm.get_cmap(color_request)
-            color_list = color_map([x/float(length) for x in range(length)]).tolist()
-    color_list = color_list + [default_color for n in range(length-len(color_list))] if len(color_list) < length else color_list
-    if color_reverse:
-        color_list.reverse()
-    return color_list
-
 
 def get_plot_3d(points, discard_gens=1, height=8, width=10, 
                      xmin=0, xmax=1, ymin=0, ymax=1, zmin=0, zmax=1,
                      remove_ticks=True, title='', elev=25, azim=240, dist=10,
-                     xlabel='Population (t)', ylabel='Population (t + 1)',
-                     zlabel='Population (t + 2)', marker='.', size=5,
+                     xlabel='x', ylabel='y',
+                     zlabel='z', marker='.', size=5,
                      alpha=0.7, color='r', color_reverse=False, legend=False, 
                      legend_bbox_to_anchor=None):
     plots = []
@@ -62,7 +47,7 @@ def get_plot_3d(points, discard_gens=1, height=8, width=10,
                        labelleft='off', labelright='off')
     else:
         ax.tick_params(reset=True)
-    color_list = get_colors(color, 1, color_reverse)
+    color_list = [color] #get_colors(color, 1, color_reverse)
     xyz = points
     plots.append(ax.scatter(xyz['x'], xyz['y'], xyz['z'], 
                             marker=marker, c=color_list[0],
@@ -73,8 +58,8 @@ def get_plot_3d(points, discard_gens=1, height=8, width=10,
     return fig, ax
 
 
-def main(points):
-    gif_filename = 'test-plot-3d'
+def main(points, fl):
+    gif_filename = fl
     pops = get_points(points)
     fig, ax = get_plot_3d(pops, remove_ticks=False)
 
@@ -92,16 +77,18 @@ def main(points):
         ax.elev = elev_range[int(azimuth/(360./steps))]
         ax.dist = dist_range[int(azimuth/(360./steps))]
         
-        fig.suptitle('random points')
-        plt.savefig('images/' + gif_filename + '/img' +
+        if not os.path.exists(gif_filename+'/img'):
+            os.makedirs(gif_filename+'/img')
+        fig.suptitle('generated image')
+        plt.savefig(gif_filename + '/img' +
                     str(azimuth).zfill(3) + '.png')
 
     plt.close() # don't display the static plot...
     
     # ...instead, create an animated gif of all the frames, then display it inline
-    list_images = sorted(glob.glob('images/'+gif_filename+'/*.png'))
+    list_images = sorted(glob.glob(gif_filename+'/*.png'))
     images = [PIL_Image.open(image) for image in list_images]
-    file_path_name = 'images/' + gif_filename + '.gif'
+    file_path_name = gif_filename + '.gif'
     writeGif(file_path_name, images, duration=0.2)
 
     print('Done!')

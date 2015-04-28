@@ -4,7 +4,8 @@ import gcode
 try:
     from PyQt4 import QtGui, QtCore
 except ImportError:
-    sys.exit("Could not import PyQt4, you may try 'sudo apt-get install python-qt4'")
+    sys.exit("Could not import PyQt4,\
+             you may try 'sudo apt-get install python-qt4'")
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -86,7 +87,9 @@ class MainWindow(QtGui.QMainWindow):
         self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
 
     def genImage(self):
-        gcode.gcode(str(self.editor.toPlainText())).saveImage()
+        fl = QtGui.QFileDialog.getSaveFileName(self, 'Save image as')
+        if fl:
+            gcode.gcode(str(self.editor.toPlainText())).saveImage(fl)
 
 
 class HighlightingRule(object):
