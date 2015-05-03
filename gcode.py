@@ -1,7 +1,4 @@
-import re
-import unittest
-import timeit
-import cairo
+import re, unittest, timeit
 import d3d
 
 
@@ -15,7 +12,12 @@ def getLine(dot1, dot2):    # generate all dots of line
     x2, y2, z2 = dot2
     coords = []
     x = x1
-    step = (x2-x1) / 10
+    if x2-x1 < 5:
+        step = (x2-x1) / 50
+    elif x2-x1 < 10:
+        step = (x2-x1) / 75
+    else:
+        step = (x2-x1) / 100
     while x < x2:
         dot = [0,0,0]
         dot[0] = x
@@ -66,7 +68,7 @@ class gcode(object):
                 result.append(temp)
         return result
 
-    def saveImage(self, fl):
+    def saveImage(self, fl='images/test'):
         gc = self.get_coord() 
         coords = []
         zmax = ymax = xmax = 0
@@ -139,4 +141,6 @@ if __name__ == "__main__":
 
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
-    print(timeit.timeit(gcode('G1').check, number=1000000))
+    print '1.000.000 checked codes - ' + str(timeit.timeit(gcode('G1').check, number=1000000))
+    print '1 generated image - ' + \
+        str(timeit.timeit(gcode('G1 X1\nG1 Y1\nG1 X2 Y3 Z10').saveImage, number=1))

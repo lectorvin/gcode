@@ -89,7 +89,7 @@ class MainWindow(QtGui.QMainWindow):
     def genImage(self):
         fl = QtGui.QFileDialog.getSaveFileName(self, 'Save image as')
         if fl:
-            gcode.gcode(str(self.editor.toPlainText())).saveImage(fl)
+            gcode.gcode(str(self.editor.toPlainText())).saveImage(fl=fl)
 
 
 class HighlightingRule(object):

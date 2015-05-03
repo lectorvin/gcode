@@ -3,7 +3,7 @@
 # IPython.core.display -> IPython.display
 # TODO: try sys.version_info
 
-import os
+import os, sys
 import pandas as pd, numpy as np
 import matplotlib.pyplot as plt, matplotlib.cm as cm
 from mpl_toolkits.mplot3d import axes3d as Axes3D
@@ -63,7 +63,7 @@ def main(points, fl):
     pops = get_points(points)
     fig, ax = get_plot_3d(pops, remove_ticks=False)
 
-    steps = 36 # create 36 frames for the animated gif
+    steps = 36     # create 36 frames for the animated gif
     min_dist = 7.
     max_dist = 10.
     dist_range = np.arange(min_dist, max_dist, (max_dist-min_dist)/steps)
@@ -83,7 +83,7 @@ def main(points, fl):
         plt.savefig(gif_filename + '/img' +
                     str(azimuth).zfill(3) + '.png')
 
-    plt.close() # don't display the static plot...
+    plt.close()    # don't display the static plot...
     
     # ...instead, create an animated gif of all the frames, then display it inline
     list_images = sorted(glob.glob(gif_filename+'/*.png'))
