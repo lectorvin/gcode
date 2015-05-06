@@ -22,19 +22,24 @@ class MainWindow(QtGui.QMainWindow):
 
         # buttons start
         self.open = QtGui.QAction('Open', self, shortcut='Ctrl+O',
-                     statusTip='Open file', triggered=self.openFile)
+                                  statusTip='Open file',
+                                  triggered=self.openFile)
         self.save = QtGui.QAction('Save as ..', self, shortcut='Ctrl+Shift+S',
-                     statusTip='Save file as ..', triggered=self.saveFile)
+                                  statusTip='Save file as ..',
+                                  triggered=self.saveFile)
         self.exit = QtGui.QAction(QtGui.QIcon('exit.png'), "Exit", self,
-                     shortcut='Ctrl+Q', statusTip='Exit application',
-                     triggered=self.close)
+                                  shortcut='Ctrl+Q',
+                                  statusTip='Exit application',
+                                  triggered=self.close)
         self.check = QtGui.QAction('Check', self, shortcut="Ctrl+B",
-                     statusTip='Check code', triggered=self.check_func)
+                                   statusTip='Check code',
+                                   triggered=self.check_func)
         self.del_com = QtGui.QAction('Delete all comments', self,
-                     statusTip='Delete all comments', triggered=self.delCom)
-        self.image = QtGui.QAction('Generate image', self, shortcut='Ctrl+G', 
-                     statusTip='Generate and save image',
-                     triggered=self.genImage)
+                                     statusTip='Delete all comments',
+                                     triggered=self.delCom)
+        self.image = QtGui.QAction('Generate image', self, shortcut='Ctrl+G',
+                                   statusTip='Generate and save image',
+                                   triggered=self.genImage)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
@@ -60,13 +65,13 @@ class MainWindow(QtGui.QMainWindow):
         self.statusBar().showMessage('Ready')
 
     def openFile(self):
-        fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes', \
-                             'Text Files (*.gcode *.txt)')
+        fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes',
+                                               'Text Files (*.gcode *.txt)')
         if fl:
             self.editor.setText(open(fl).read())
 
     def saveFile(self):
-        fl = QtGui.QFileDialog.getSaveFileName(self, 'Save as', './gcodes', \
+        fl = QtGui.QFileDialog.getSaveFileName(self, 'Save as', './gcodes',
                                                '*.gcode')
         if fl:
             with open(fl, 'w') as f:
@@ -74,9 +79,13 @@ class MainWindow(QtGui.QMainWindow):
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Message',
-         "Are you sure to quit?", QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
-        if reply == QtGui.QMessageBox.Yes: event.accept() 
-        else: event.ignore()
+                                           "Are you sure to quit?",
+                                           QtGui.QMessageBox.No,
+                                           QtGui.QMessageBox.Yes)
+        if reply == QtGui.QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
 
     def check_func(self):
         valid = gcode.gcode(str(self.editor.toPlainText())).check()
@@ -143,9 +152,9 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         brush = QtGui.QBrush(QtCore.Qt.red)
         error.setForeground(brush)
         # this pattern finds correct string
-        pattern = QtCore.QRegExp('^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$') 
+        pattern = QtCore.QRegExp(
+                            '^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$')
         self.rule = HighlightingRule(pattern, error)
-
 
     def highlightBlock(self, text):
         for rule in self.highlightingRules:
