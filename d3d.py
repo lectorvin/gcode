@@ -18,18 +18,79 @@ from images2gif import writeGif
 
 
 def get_points(points):
+    """ Return DataFrame from points columns - [x, y, z] """
     point_columns = ['x', 'y', 'z']
     df = pd.DataFrame(points, columns=point_columns)
     df = df.drop(labels='', axis=1)
     return df
 
 
-def get_plot_3d(points, discard_gens=1, height=8, width=10,
-                xmin=0, xmax=1, ymin=0, ymax=1, zmin=0, zmax=1,
-                remove_ticks=True, title='', elev=25, azim=240, dist=10,
-                xlabel='x', ylabel='y', zlabel='z', marker='.', size=5,
-                alpha=0.7, color='r', color_reverse=False, legend=False,
-                legend_bbox_to_anchor=None):
+def get_plot_3d(points, height=8, width=10, xmin=0, xmax=1, ymin=0, ymax=1,
+                zmin=0, zmax=1, remove_ticks=True, title='', elev=25,
+                azim=240, dist=10, xlabel='x', ylabel='y', zlabel='z',
+                marker='8', size=5, alpha=0.7, color='r', color_reverse=False,
+                legend=False, legend_bbox_to_anchor=None):
+    """
+    Create 3d image from points
+
+    Parameters
+    ----------
+    points : DataFrame
+        DataFrame with points, columns - [x, y, z].
+    height : float, optional
+        height of plot in inches.
+    width : float, optional
+        width of plot in inches.
+    xmin : float, optional
+        Left limit, default 0 = left.
+    xmax : float, optional
+        Right limit, default 1 = right.
+    ymin : float, optional
+        Left limit, default 0 = left.
+    ymax : float, optional
+        Right limit, default 1 = right.
+    zmin : float, optional
+        Left limit, default 0 = left.
+    zmax : float, optional
+        Right limit, default 1 = right.
+    remove_ticks : bool, optional
+        Default `True`. Remove all ticks.
+    title : string, optional
+        Title of image, show on the top.
+    elev : int, optional
+        Elevation of image, default - 25.
+    azim : float, optional
+        Azimuth of image, default - 240.
+    dist : int, optional
+        Distance of the eye viewing point, default - 10.
+    xlabel : string, optional
+        Label of x axe.
+    ylabel : string, optional
+        Label of y axe.
+    zlabel : string, optional
+        Label of z axe.
+    marker : string, optional
+        Style of dots. You may try '*' or '>'.
+    size : float, optional
+        Size of image.
+    alpha : float or None, optional
+        Alpha value for the patches.
+    color : string or sequence of strings, optional
+        Color, will be used in image.
+    color_reverse : bool, optional
+        Default is `False`. If `True` reverse colors.
+    legend : bool, optional
+        Default is `False`. If `True` show legend on plot.
+    legend_bbox_to_anchor : tuple with float, optional
+        Legend location.
+
+    Return
+    ------
+    fig : matplotlib.pyplot.figure
+        Created 3d image.
+    ax : fig.gca
+        Subplot of fig.
+    """
     plots = []
     names = ['value']
     fig = plt.figure(figsize=(width, height))
@@ -51,7 +112,7 @@ def get_plot_3d(points, discard_gens=1, height=8, width=10,
                        labelleft='off', labelright='off')
     else:
         ax.tick_params(reset=True)
-    color_list = [color]   # get_colors(color, 1, color_reverse)
+    color_list = list(color)   # get_colors(color, 1, color_reverse)
     xyz = points
     plots.append(ax.scatter(xyz['x'], xyz['y'], xyz['z'],
                             marker=marker, c=color_list[0],
@@ -63,6 +124,18 @@ def get_plot_3d(points, discard_gens=1, height=8, width=10,
 
 
 def main(points, fl):
+    """
+    Parameters
+    ----------
+    points : DataFrame
+        DataFrame with points, columns - [x, y, z].
+    fl : string
+        Path to file.
+
+    Return
+    ------
+    Nothing, but create and save image
+    """
     gif_filename = fl
     pops = get_points(points)
     fig, ax = get_plot_3d(pops, remove_ticks=False)
@@ -82,11 +155,10 @@ def main(points, fl):
         ax.elev = elev_range[int(azimuth/(360./steps))]
         ax.dist = dist_range[int(azimuth/(360./steps))]
 
-        if not os.path.exists(gif_filename+'/img'):
-            os.makedirs(gif_filename+'/img')
+        if not os.path.exists(gif_filename):
+            os.makedirs(gif_filename)
         fig.suptitle('generated image')
-        plt.savefig(gif_filename + '/img' +
-                    str(azimuth).zfill(3) + '.png')
+        plt.savefig(gif_filename + '/img' + str(azimuth).zfill(3) + '.png')
 
     plt.close()    # don't display the static plot...
 

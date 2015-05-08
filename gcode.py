@@ -6,11 +6,31 @@ import d3d
 
 
 class GcodeError(Exception):
+    """ Exception for invalid g-codes """
     def __init__(self):
         print('Not G-codes')
 
 
 def getLine(dot1, dot2):    # generate all dots of line
+    """
+    Count dots, which are lies on line.
+
+    Parameters
+    ----------
+    dot1 : array_like
+        Coordinates of the beginning of line (x, y, z)
+    dot2 : array_like
+        Coordinates of the end of line (x, y, z)
+
+    Returns
+    -------
+    coords : array of dtype float
+        Dots, which are lies on line.
+
+    Notes
+    -----
+    Return 50, 75 or 100 dots. Number of dots depends on line's length
+    """
     x1, y1, z1 = dot1
     x2, y2, z2 = dot2
     coords = []
@@ -32,18 +52,41 @@ def getLine(dot1, dot2):    # generate all dots of line
 
 
 class gcode(object):
+    """
+    Class for gcode object
+
+    Attributes
+    ----------
+    check : bool
+        Check, if value is valid gcode.
+    del_comm : string
+        Delete all comments from text and return string.
+    coordinates : array
+        Get all coordinates from text.
+    text : string
+        Return gcode as string.
+    saveImage : None
+        Save image as gif file
+
+    Parameters
+    ----------
+    text : string_like
+        Gcodes.
+    """
     def __init__(self, text):
-        self.text = str(text)
-        self.blocks = map(str, text.split('\n'))
+        self._text = str(text)
+        self.blocks = map(str, text.split('\n'))   # central value of class
 
     def check(self):   # full program
+        """ Check if self.blocks contains valid gcode """
         r = re.compile('(?!(^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$))')
         for line in self.blocks:
             if r.match(line):
                 return False
         return True
 
-    def del_comm(self):
+    def del_comm(self, blocks=False):
+        """ Delete all comments from text """
         if not(self.check()):
             raise GcodeError()
         temp = []
@@ -55,11 +98,13 @@ class gcode(object):
             line = line.strip()
             if line != "":
                 temp.append(line)
+        if blocks:
+            return temp
         return "\n".join(temp)
-        return temp
 
     @property
     def coordinates(self):
+        """ Return all coordinates from self.blocks """
         result = []
         blocks = map(str, self.del_comm().split('\n'))
         coor = re.compile('[XYZ][+-]?[0-9]+(\.[0-9]+)?')
@@ -76,7 +121,21 @@ class gcode(object):
                 result.append(temp)
         return result
 
+    @property
+    def text(self):
+        """ Return gcode as string """
+        return self._text
+
     def saveImage(self, fl='images/test'):
+        """
+        Generate and save image as fl.gif
+
+        Parameters
+        ----------
+        self : gcode object
+            g-codes, which will be used
+        fl : string, optional
+        """
         gc = self.coordinates
         coords = []
         zmax = ymax = xmax = 0
