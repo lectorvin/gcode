@@ -22,4 +22,4 @@ The easiest way install this program with git:
   Push button "Create image" (Ctrl+G) to create animated gif and png images of object.
   
 ## License:
-  Project License can be found [here](license).
+  Project License can be found [here](LICENSE.md).
