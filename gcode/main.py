@@ -7,6 +7,9 @@ except ImportError:
     sys.exit("Could not import PyQt4,\
              you may try 'sudo apt-get install python-qt4'")
 
+if sys.version_info >= (3, ):
+    raise SystemError('Nope! Use python2.7!')
+
 icons = {'icon':'icons/icon.png', 'exit':'icons/exit.png'}
 
 class MainWindow(QtGui.QMainWindow):
