@@ -1,0 +1,17 @@
+# Source #
+##########
+*.py[cod]
+
+# Python files #
+###############
+# Egg metadata
+*.egg-info
+# setup.py dist directory
+dist
+build
+
+# Images #
+##########
+# they are too big
+gcode/images/*
+*.gif
