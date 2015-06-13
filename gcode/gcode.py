@@ -1,7 +1,6 @@
 import re
 import unittest
 import timeit
-import d3d
 import opengl
 import numpy as np
 
@@ -30,16 +29,13 @@ def getLine(dot1, dot2):    # generate all dots of line
 
     Notes
     -----
-    Return 50, 75 or 100 dots. Number of dots depends on line's length
+    Return 100 dots
     """
     x1, y1, z1 = dot1
     x2, y2, z2 = dot2
     coords = []
     x = x1
-    if x2-x1 < 10:
-        step = (x2-x1) / 50
-    else:
-        step = (x2-x1) / 75
+    step = (x2-x1) / 100
     while x < x2:
         dot = [0, 0, 0]
         dot[0] = x
@@ -47,6 +43,7 @@ def getLine(dot1, dot2):    # generate all dots of line
         dot[2] = float((x-x1)*(z2-z1) / (x2-x1)) + z1
         coords.append(dot)
         x += step
+
     return coords
 
 
@@ -74,7 +71,7 @@ class gcode(object):
     """
     def __init__(self, text):
         self._text = str(text)
-        self.blocks = map(str, text.split('\n'))   # central value of class
+        self.blocks = list(map(str, text.split('\n')))   # central value of class
 
     def check(self):   # full program
         """ Check if self.blocks contains valid gcode """
@@ -125,15 +122,8 @@ class gcode(object):
         """ Return gcode as string """
         return self._text
 
-    def saveImage(self, show=False, fl='images/test'):
-        """
-        Generate and save image as fl.gif
-
-        Parameters
-        ----------
-        self : gcode object
-            g-codes, which will be used
-        fl : string, optional
+    def saveImage(self):
+        """ Generate image and show it
         """
         gc = self.coordinates
         coords = []
@@ -193,18 +183,15 @@ class gcode(object):
                     dots.append(y)
 
         print(len(dots))
-        a = opengl.App(np.array(dots))
-        a.main()
-
-        """
-        if show:
-            d3d.main(dots)
-        else:
-            d3d.main(dots, show=False, fl=str(fl))
-        """
+        if len(dots):
+            a = opengl.App(np.array(dots))
+            a.main()
 
 
 if __name__ == "__main__":
+    import sys
+    from pyqtgraph.Qt import QtGui, QtCore
+
     class Test(unittest.TestCase):
         def testa_5(self): self.assertFalse(gcode('asdf').check())
 
@@ -249,5 +236,6 @@ if __name__ == "__main__":
     unittest.TextTestRunner(verbosity=2).run(suite)
     print('1.000.000 checked codes - ' + str(timeit.timeit(gcode('G1').check,
                                              number=1000000)))
+    a = QtGui.QApplication(sys.argv)
     print('1 generated image - ' + str(timeit.timeit(gcode(
                            'G1 X1\nG1 Y1\nG1 X2 Y3 Z10').saveImage, number=1)))

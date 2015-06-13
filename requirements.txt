@@ -1,5 +1,2 @@
 numpy
-matplotlib
-pandas
-pillow
 pyqtgraph

@@ -1,13 +1,10 @@
 import sys
+import re
 import gcode
 
 from pyqtgraph.Qt import QtGui, QtCore
 
-if sys.version_info >= (3, ):
-    print('Nope! Use python2.7')
-    sys.exit()
-
-icons = {'icon':'icons/icon.png', 'exit':'icons/exit.png'}
+icons = {'icon': 'icons/icon.png', 'exit': 'icons/exit.png'}
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -42,9 +39,6 @@ class MainWindow(QtGui.QMainWindow):
         self.show_image = QtGui.QAction('Show image', self, shortcut="Ctrl+G",
                                         statusTip='Show image',
                                         triggered=self.showImage)
-        self.save_image = QtGui.QAction('Create image', self, shortcut='Ctrl+C',
-                                          statusTip='Create and save image',
-                                          triggered=self.genImage)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
@@ -54,7 +48,6 @@ class MainWindow(QtGui.QMainWindow):
         fl = menubar.addMenu('&Options')
         fl.addAction(self.check)
         fl.addAction(self.del_com)
-        fl.addAction(self.save_image)
         fl.addAction(self.show_image)
 
         toolbar = self.addToolBar("Actions")
@@ -106,19 +99,9 @@ class MainWindow(QtGui.QMainWindow):
     def delCom(self):
         self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
 
-    def genImage(self):
-        fl = QtGui.QFileDialog.getSaveFileName(self, 'Save image as')
-        try:
-           if fl:
-               gcode.gcode(str(self.editor.toPlainText())).saveImage(fl=fl)
-               self.message("Message", "Done!")
-        except Exception as e:
-           self.message("Error", str(e))
-
     def showImage(self):
         if (str(self.editor.toPlainText())):
-            gcode.gcode(str(self.editor.toPlainText())).saveImage(show=True,
-                                                                  fl='')
+            gcode.gcode(str(self.editor.toPlainText())).saveImage()
 
     def message(self, name, message):
         reply = QtGui.QMessageBox.question(self, name,
@@ -147,28 +130,28 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         brush = QtGui.QBrush(QtCore.Qt.darkBlue, QtCore.Qt.SolidPattern)
         main_command.setForeground(brush)
         main_command.setFontWeight(QtGui.QFont.Bold)
-        pattern = QtCore.QRegExp("\\b[GM][0-9]{1,3}\\b")
+        pattern = re.compile("\\b[GM][0-9]{1,3}\\b")
         rule = HighlightingRule(pattern, main_command)
         self.highlightingRules.append(rule)
 
         # line (N10)
         brush = QtGui.QBrush(QtCore.Qt.darkMagenta, QtCore.Qt.SolidPattern)
         line.setForeground(brush)
-        pattern = QtCore.QRegExp("\\bN[0-9]+\\b")
+        pattern = re.compile("\\bN[0-9]+\\b")
         rule = HighlightingRule(pattern, line)
         self.highlightingRules.append(rule)
 
         # coordinates (X10.5 or Y5)
         brush = QtGui.QBrush(QtCore.Qt.darkCyan)
         coor.setForeground(brush)
-        pattern = QtCore.QRegExp("\\b[XYZ][-+]?[0-9]+(\.[0-9]+)?\\b")
+        pattern = re.compile("\\b[XYZ][-+]?[0-9]+(\.[0-9]+)?\\b")
         rule = HighlightingRule(pattern, coor)
         self.highlightingRules.append(rule)
 
         # comment (; .... blah blah)
         brush = QtGui.QBrush(QtCore.Qt.darkYellow)
         comment.setForeground(brush)
-        pattern = QtCore.QRegExp(";\s.*")
+        pattern = re.compile(";\s.*")
         rule = HighlightingRule(pattern, comment)
         self.highlightingRules.append(rule)
 
@@ -176,22 +159,22 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         brush = QtGui.QBrush(QtCore.Qt.red)
         error.setForeground(brush)
         # this pattern finds correct string
-        pattern = QtCore.QRegExp(
-                            '^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$')
+        pattern = re.compile('^(((?!;)[A-Z][+-]?\d+(\.\d+)?\s?)*(\s*;\s.*)?)$')
         self.rule = HighlightingRule(pattern, error)
 
     def highlightBlock(self, text):
         for rule in self.highlightingRules:
-            expression = QtCore.QRegExp(rule.pattern)
-            index = expression.indexIn(text, 0)
-            while index >= 0:
-                length = expression.matchedLength()
-                self.setFormat(index, length, rule.format)
-                index = text.indexOf(expression, index+length)
-        # highlight errors
-        exp = QtCore.QRegExp(self.rule.pattern)
-        index = exp.indexIn(text, 0)
-        if index < 0:          # if string isn't correct
+            exp = rule.pattern
+            result = exp.search(text, 0)
+            while result:
+                span = result.span()
+                length = span[1] - span[0]
+                self.setFormat(span[0], length, rule.format)
+                result = exp.search(text, span[0]+length)
+
+        exp = self.rule.pattern
+        result = exp.search(text, 0)
+        if not(result):
             self.setFormat(0, len(text), self.rule.format)
 
         self.setCurrentBlockState(0)

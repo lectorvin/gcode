@@ -2,6 +2,8 @@
 ##########
 *.py[cod]
 __pycache__
+.ropeproject
+gcode/.ropeproject
 
 # Python files #
 ###############

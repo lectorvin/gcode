@@ -3,6 +3,7 @@ import pyqtgraph.opengl as gl
 
 from pyqtgraph.Qt import QtGui
 
+
 class App(QtGui.QWidget):
     def __init__(self, dots, parent=None):
         QtGui.QWidget.__init__(self, parent)
