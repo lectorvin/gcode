@@ -19,7 +19,7 @@ The easiest way install this program with git:
 ```
 ## How it works:
   Run main.py. In editor you can open gcodes files. It can hightlight syntax.
-  Push button "Create image" (Ctrl+G) to create animation of image.
+  Push button "Create image" (Ctrl+G) to create image.
   
 ## License:
   Project License can be found [here](LICENSE.md).
