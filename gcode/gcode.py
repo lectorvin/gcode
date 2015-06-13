@@ -2,6 +2,8 @@ import re
 import unittest
 import timeit
 import d3d
+import opengl
+import numpy as np
 
 
 class GcodeError(Exception):
@@ -190,10 +192,16 @@ class gcode(object):
                 for y in temp:
                     dots.append(y)
 
+        print(len(dots))
+        a = opengl.App(np.array(dots))
+        a.main()
+
+        """
         if show:
             d3d.main(dots)
         else:
             d3d.main(dots, show=False, fl=str(fl))
+        """
 
 
 if __name__ == "__main__":

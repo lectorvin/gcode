@@ -1,15 +1,11 @@
 import sys
 import gcode
 
+from pyqtgraph.Qt import QtGui, QtCore
+
 if sys.version_info >= (3, ):
     print('Nope! Use python2.7')
     sys.exit()
-
-try:
-    from PyQt4 import QtGui, QtCore
-except ImportError:
-    sys.exit("Could not import PyQt4,\
-             you may try 'sudo apt-get install python-qt4'")
 
 icons = {'icon':'icons/icon.png', 'exit':'icons/exit.png'}
 
