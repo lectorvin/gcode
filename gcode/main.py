@@ -1,16 +1,18 @@
 import sys
 import gcode
 
+if sys.version_info >= (3, ):
+    print('Nope! Use python2.7')
+    sys.exit()
+
 try:
     from PyQt4 import QtGui, QtCore
 except ImportError:
     sys.exit("Could not import PyQt4,\
              you may try 'sudo apt-get install python-qt4'")
 
-if sys.version_info >= (3, ):
-    raise SystemError('Nope! Use python2.7!')
-
 icons = {'icon':'icons/icon.png', 'exit':'icons/exit.png'}
+
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -41,9 +43,12 @@ class MainWindow(QtGui.QMainWindow):
         self.del_com = QtGui.QAction('Delete all comments', self,
                                      statusTip='Delete all comments',
                                      triggered=self.delCom)
-        self.image = QtGui.QAction('Create image', self, shortcut='Ctrl+G',
-                                   statusTip='Create and save image',
-                                   triggered=self.genImage)
+        self.show_image = QtGui.QAction('Show image', self, shortcut="Ctrl+G",
+                                        statusTip='Show image',
+                                        triggered=self.showImage)
+        self.save_image = QtGui.QAction('Create image', self, shortcut='Ctrl+C',
+                                          statusTip='Create and save image',
+                                          triggered=self.genImage)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
@@ -53,12 +58,13 @@ class MainWindow(QtGui.QMainWindow):
         fl = menubar.addMenu('&Options')
         fl.addAction(self.check)
         fl.addAction(self.del_com)
-        fl.addAction(self.image)
+        fl.addAction(self.save_image)
+        fl.addAction(self.show_image)
 
         toolbar = self.addToolBar("Actions")
         toolbar.addAction(self.open)
         toolbar.addAction(self.save)
-        toolbar.addAction(self.image)
+        toolbar.addAction(self.show_image)
         toolbar.addAction(self.exit)
         # end
 
@@ -108,18 +114,20 @@ class MainWindow(QtGui.QMainWindow):
         fl = QtGui.QFileDialog.getSaveFileName(self, 'Save image as')
         try:
            if fl:
-               self.message_without_buttons("Message", "Waiting please ...")
                gcode.gcode(str(self.editor.toPlainText())).saveImage(fl=fl)
                self.message("Message", "Done!")
         except Exception as e:
            self.message("Error", str(e))
 
+    def showImage(self):
+        if (str(self.editor.toPlainText())):
+            gcode.gcode(str(self.editor.toPlainText())).saveImage(show=True,
+                                                                  fl='')
+
     def message(self, name, message):
         reply = QtGui.QMessageBox.question(self, name,
                                          message, QtGui.QMessageBox.Yes)
 
-    def message_without_buttons(self, name, message):
-        reply = QtGui.QMessageBox.question(self, name, message)
 
 class HighlightingRule(object):
     def __init__(self, pattern, format):

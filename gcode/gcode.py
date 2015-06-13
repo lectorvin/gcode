@@ -1,7 +1,6 @@
 import re
 import unittest
 import timeit
-
 import d3d
 
 
@@ -35,12 +34,10 @@ def getLine(dot1, dot2):    # generate all dots of line
     x2, y2, z2 = dot2
     coords = []
     x = x1
-    if x2-x1 < 5:
+    if x2-x1 < 10:
         step = (x2-x1) / 50
-    elif x2-x1 < 10:
-        step = (x2-x1) / 75
     else:
-        step = (x2-x1) / 100
+        step = (x2-x1) / 75
     while x < x2:
         dot = [0, 0, 0]
         dot[0] = x
@@ -126,7 +123,7 @@ class gcode(object):
         """ Return gcode as string """
         return self._text
 
-    def saveImage(self, fl='images/test'):
+    def saveImage(self, show=False, fl='images/test'):
         """
         Generate and save image as fl.gif
 
@@ -192,7 +189,11 @@ class gcode(object):
             if temp:
                 for y in temp:
                     dots.append(y)
-        d3d.main(dots, str(fl))
+
+        if show:
+            d3d.main(dots)
+        else:
+            d3d.main(dots, show=False, fl=str(fl))
 
 
 if __name__ == "__main__":
@@ -241,4 +242,4 @@ if __name__ == "__main__":
     print('1.000.000 checked codes - ' + str(timeit.timeit(gcode('G1').check,
                                              number=1000000)))
     print('1 generated image - ' + str(timeit.timeit(gcode(
-                            'G1 X1\nG1 Y1\nG1 X2 Y3 Z10').saveImage, number=1)))
+                           'G1 X1\nG1 Y1\nG1 X2 Y3 Z10').saveImage, number=1)))

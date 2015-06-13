@@ -1,6 +1,7 @@
 # Source #
 ##########
 *.py[cod]
+__pycache__
 
 # Python files #
 ###############
@@ -13,5 +14,5 @@ build
 # Images #
 ##########
 # they are too big
-gcode/images/*
+gcode/images
 *.gif
