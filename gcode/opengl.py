@@ -5,20 +5,20 @@ from pyqtgraph.Qt import QtGui
 
 
 class App(QtGui.QWidget):
-    def __init__(self, dots, parent=None):
+    def __init__(self, data, colors, parent=None):
         QtGui.QWidget.__init__(self, parent)
         w = gl.GLViewWidget()
-        w.opts['distance'] = 40
+        w.setCameraPosition(distance=150)
         w.show()
         w.setWindowTitle('G-codes')
 
         self.plt = gl.GLLinePlotItem()
+        self.data = data
+        self.colors = colors
         w.addItem(self.plt)
 
-        self.dots = dots
-
     def main(self):
-        self.plt.setData(pos=self.dots)
+        self.plt.setData(pos=self.data, color=self.colors)
         self.show()
 
 

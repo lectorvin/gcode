@@ -3,6 +3,13 @@ import unittest
 import timeit
 import opengl
 import numpy as np
+from gradient import main as grad
+
+
+COLOR_MIN = [0.0, 0.0, 1.0, 0.9]
+COLOR_MAX = [1.0, 0.0, 0.0, 0.9]
+current_feedrate = 0
+current_color = 0
 
 
 class GcodeError(Exception):
@@ -11,7 +18,7 @@ class GcodeError(Exception):
         print('Not G-codes')
 
 
-def getLine(dot1, dot2):    # generate all dots of line
+def getColorLine(dot1, dot2):    # generate all dots of line
     """
     Count dots, which are lies on line.
 
@@ -31,18 +38,44 @@ def getLine(dot1, dot2):    # generate all dots of line
     -----
     Return 100 dots
     """
-    x1, y1, z1 = dot1
-    x2, y2, z2 = dot2
+    global current_feedrate, current_color
+    x1, y1, z1, feed1 = dot1
+    x2, y2, z2, feed2 = dot2
     coords = []
     x = x1
     step = (x2-x1) / 100
+
+    if current_feedrate == 0:
+        start_color = COLOR_MIN
+        if feed2 > feed1:
+            finish_color = COLOR_MAX
+        else:
+            finish_color = COLOR_MIN
+    else:
+        if feed2 > feed1:
+            start_color = COLOR_MIN
+            finish_color = COLOR_MAX
+        elif feed1 > feed2:
+            start_color = COLOR_MAX
+            finish_color = COLOR_MIN
+        else:   # feed1 == feed2
+            if feed2 == current_feedrate:
+                start_color = finish_color = current_color
+
+    current_color = finish_color
+    current_feedrate = feed2
+    color_list = grad(start_color, finish_color, n=101)
+
+    i = 0
     while x < x2:
-        dot = [0, 0, 0]
+        dot = [0, 0, 0, 0, 0, 0, 0]   # x, y, z, r, g, b, p
         dot[0] = x
         dot[1] = float((x-x1)*(y2-y1) / (x2-x1)) + y1
         dot[2] = float((x-x1)*(z2-z1) / (x2-x1)) + z1
+        dot[3:7] = color_list[i]
         coords.append(dot)
         x += step
+        i += 1
 
     return coords
 
@@ -71,7 +104,8 @@ class gcode(object):
     """
     def __init__(self, text):
         self._text = str(text)
-        self.blocks = list(map(str, text.split('\n')))   # central value of class
+        # central value of class
+        self.blocks = list(map(str, text.split('\n')))
 
     def check(self):   # full program
         """ Check if self.blocks contains valid gcode """
@@ -103,7 +137,7 @@ class gcode(object):
         """ Return all coordinates from self.blocks """
         result = []
         blocks = map(str, self.del_comm().split('\n'))
-        coor = re.compile('[XYZ][+-]?[0-9]+(\.[0-9]+)?')
+        coor = re.compile('[FXYZ][+-]?[0-9]+(\.[0-9]+)?')
         for line in blocks:
             coord_line = False
             comm = line.split()
@@ -122,15 +156,15 @@ class gcode(object):
         """ Return gcode as string """
         return self._text
 
-    def saveImage(self):
-        """ Generate image and show it
+    def get_dots(self):
+        """ Generate dots and return them
         """
         gc = self.coordinates
         coords = []
-        zmax = ymax = xmax = 0
-        zmin = ymin = xmin = 9999
+        zmax = ymax = xmax = self.fmax = 0
+        zmin = ymin = xmin = self.fmin = 9999
         for line in gc:
-            temp = [None, None, None]
+            temp = [None, None, None, None]  # X, Y, Z, Feedrate
             for c in line:
                 if c.startswith('X'):
                     temp[0] = float(c[1:])
@@ -144,7 +178,12 @@ class gcode(object):
                     temp[2] = float(c[1:])
                     zmax = max(zmax, temp[2])
                     zmin = min(zmin, temp[2])
-            if (temp[0] != None) or (temp[1] != None) or (temp[2] != None):
+                elif c.startswith('F'):
+                    temp[3] = float(c[1:])
+                    self.fmax = max(self.fmax, temp[3])
+                    self.fmin = min(self.fmin, temp[3])
+            if ((temp[0] != None) or (temp[1] != None) or (temp[2] != None) or
+               (temp[3] != None)):
                 try:
                     if temp[0] == None:
                         temp[0] = coords[-1][0]
@@ -160,31 +199,46 @@ class gcode(object):
                         temp[2] = coords[-1][2]
                 except IndexError:
                     pass
+                try:
+                    if temp[3] == None:
+                        temp[3] = coords[-1][3]
+                except IndexError:
+                    pass
                 coords.append(temp)
 
-        for i in coords:
+        for i in coords:   # if something is still 0
             if i[0] == None:
-                i[0] = xmin*2
+                i[0] = xmin * 2  # min*2 - min
             if i[1] == None:
-                i[1] = ymin*2
+                i[1] = ymin * 2
             if i[2] == None:
-                i[2] = zmin*2
+                i[2] = zmin * 2
+            if i[3] == None:
+                i[3] = self.fmin * 2
             i[0] -= xmin
             i[1] -= ymin
             i[2] -= zmin
+            i[3] -= self.fmin
 
         dots = []
         for i in range(len(coords)):
             temp = []
             if i != len(coords)-1:
-                temp = getLine(coords[i], coords[i+1])
+                temp = getColorLine(coords[i], coords[i+1])
             if temp:
                 for y in temp:
                     dots.append(y)
 
+        return dots
+
+    def saveImage(self):
+        dots = np.array(self.get_dots())
         print(len(dots))
+        data = dots[:, :3]
+        colors = dots[:, 3:]
         if len(dots):
-            a = opengl.App(np.array(dots))
+            data = np.array([[x-40 for x in i] for i in data])
+            a = opengl.App(data, colors)
             a.main()
 
 

@@ -104,8 +104,8 @@ class MainWindow(QtGui.QMainWindow):
             gcode.gcode(str(self.editor.toPlainText())).saveImage()
 
     def message(self, name, message):
-        reply = QtGui.QMessageBox.question(self, name,
-                                         message, QtGui.QMessageBox.Yes)
+        reply = QtGui.QMessageBox.question(self, name, message,
+                                           QtGui.QMessageBox.Yes)
 
 
 class HighlightingRule(object):
@@ -122,6 +122,7 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         line = QtGui.QTextCharFormat()
         coor = QtGui.QTextCharFormat()
         comment = QtGui.QTextCharFormat()
+        feedrate = QtGui.QTextCharFormat()
         error = QtGui.QTextCharFormat()
 
         self.highlightingRules = []
@@ -153,6 +154,13 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
         comment.setForeground(brush)
         pattern = re.compile(";\s.*")
         rule = HighlightingRule(pattern, comment)
+        self.highlightingRules.append(rule)
+
+        # feedrate (F160.0)
+        brush = QtGui.QBrush(QtCore.Qt.darkGreen)
+        feedrate.setForeground(brush)
+        pattern = re.compile("\\b[F][-+]?[0-9]+(\.[0-9]+)?\\b")
+        rule = HighlightingRule(pattern, feedrate)
         self.highlightingRules.append(rule)
 
         # error
