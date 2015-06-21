@@ -4,6 +4,7 @@ import timeit
 import opengl
 import numpy as np
 from gradient import main as grad
+from pyqtgraph import QtGui, QtCore
 
 
 COLOR_MIN = [0.0, 0.0, 1.0, 0.9]
@@ -94,6 +95,8 @@ class gcode(object):
         Get all coordinates from text.
     text : string
         Return gcode as string.
+    get_dots : array
+        Return dots with colors
     saveImage : None
         Save image as gif file
 
@@ -161,59 +164,56 @@ class gcode(object):
         """
         gc = self.coordinates
         coords = []
-        zmax = ymax = xmax = self.fmax = 0
         zmin = ymin = xmin = self.fmin = 9999
         for line in gc:
             temp = [None, None, None, None]  # X, Y, Z, Feedrate
             for c in line:
                 if c.startswith('X'):
                     temp[0] = float(c[1:])
-                    xmax = max(xmax, temp[0])
                     xmin = min(xmin, temp[0])
                 elif c.startswith('Y'):
                     temp[1] = float(c[1:])
-                    ymax = max(ymax, temp[1])
                     ymin = min(ymin, temp[1])
                 elif c.startswith('Z'):
                     temp[2] = float(c[1:])
-                    zmax = max(zmax, temp[2])
                     zmin = min(zmin, temp[2])
                 elif c.startswith('F'):
                     temp[3] = float(c[1:])
-                    self.fmax = max(self.fmax, temp[3])
                     self.fmin = min(self.fmin, temp[3])
-            if ((temp[0] != None) or (temp[1] != None) or (temp[2] != None) or
-               (temp[3] != None)):
+            if ((temp[0] is not None) or
+               (temp[1] is not None) or
+               (temp[2] is not None) or
+               (temp[3] is not None)):
                 try:
-                    if temp[0] == None:
+                    if temp[0] is None:
                         temp[0] = coords[-1][0]
                 except IndexError:
                     pass
                 try:
-                    if temp[1] == None:
+                    if temp[1] is None:
                         temp[1] = coords[-1][1]
                 except IndexError:
                     pass
                 try:
-                    if temp[2] == None:
+                    if temp[2] is None:
                         temp[2] = coords[-1][2]
                 except IndexError:
                     pass
                 try:
-                    if temp[3] == None:
+                    if temp[3] is None:
                         temp[3] = coords[-1][3]
                 except IndexError:
                     pass
                 coords.append(temp)
 
         for i in coords:   # if something is still 0
-            if i[0] == None:
+            if i[0] is None:
                 i[0] = xmin * 2  # min*2 - min
-            if i[1] == None:
+            if i[1] is None:
                 i[1] = ymin * 2
-            if i[2] == None:
+            if i[2] is None:
                 i[2] = zmin * 2
-            if i[3] == None:
+            if i[3] is None:
                 i[3] = self.fmin * 2
             i[0] -= xmin
             i[1] -= ymin
@@ -239,12 +239,14 @@ class gcode(object):
         if len(dots):
             data = np.array([[x-40 for x in i] for i in data])
             a = opengl.App(data, colors)
+            a.timer = QtCore.QTimer(a)
+            a.connect(a.timer, QtCore.SIGNAL("timeout()"), a.draw_image)
+            a.timer.start(1)
             a.main()
 
 
 if __name__ == "__main__":
     import sys
-    from pyqtgraph.Qt import QtGui, QtCore
 
     class Test(unittest.TestCase):
         def testa_5(self): self.assertFalse(gcode('asdf').check())

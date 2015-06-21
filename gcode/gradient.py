@@ -7,8 +7,7 @@ def RGB_to_gl(RGB, p=0.9):
 
 def main(start, finish=[1.0, 0.0, 0, 0.9], n=40):
     '''Returns a gradient list of (n) colors between
-    two colors. start and finish should be the array of colors '''
-
+    two colors. Start and finish should be the array of colors '''
     s = start
     f = finish
     RGB_list = [s]
