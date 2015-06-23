@@ -109,9 +109,9 @@ class MainWindow(QtGui.QMainWindow):
 
 
 class HighlightingRule(object):
-    def __init__(self, pattern, format):
+    def __init__(self, pattern, format_):
         self.pattern = pattern
-        self.format = format
+        self.format_ = format_
 
 
 class MyHighlighter(QtGui.QSyntaxHighlighter):
@@ -177,13 +177,13 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
             while result:
                 span = result.span()
                 length = span[1] - span[0]
-                self.setFormat(span[0], length, rule.format)
+                self.setFormat(span[0], length, rule.format_)
                 result = exp.search(text, span[0]+length)
 
         exp = self.rule.pattern
         result = exp.search(text, 0)
         if not(result):
-            self.setFormat(0, len(text), self.rule.format)
+            self.setFormat(0, len(text), self.rule.format_)
 
         self.setCurrentBlockState(0)
 

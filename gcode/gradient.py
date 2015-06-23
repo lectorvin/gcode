@@ -1,11 +1,10 @@
 def RGB_to_gl(RGB, p=0.9):
     ''' [255, 255, 255] -> [1, 1, 1, p] '''
-    color = [round(float(i)/255., 2) if i != 0 else 0 for i in RGB]
-    + [float(p)]
+    color = [round(float(i)/255., 2) for i in RGB] + [float(p)]
     return color
 
 
-def main(start, finish=[1.0, 0.0, 0, 0.9], n=40):
+def main(start=[0.0, 1.0, 0, 0.8], finish=[1.0, 0.0, 0, 0.9], n=40):
     '''Returns a gradient list of (n) colors between
     two colors. Start and finish should be the array of colors '''
     s = start
@@ -14,7 +13,7 @@ def main(start, finish=[1.0, 0.0, 0, 0.9], n=40):
 
     for t in range(1, n):
         curr_vector = [
-            round(s[j] + (float(t) / (n-1)) * (f[j] - s[j]), 2)
+            round((s[j] + (float(t)/(n-1)) * (f[j]-s[j])), 2)
             for j in range(4)
         ]
 

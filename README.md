@@ -1,4 +1,4 @@
-This program helps you working with gcodes. It's kind of text editor, which can create animated gif-files.
+This program helps you working with gcodes. It's kind of text editor, which can show process of building images.
 
 ## Requirements:
 - python (2.7+ or 3.4+)
@@ -19,7 +19,7 @@ The easiest way install this program with git:
 ```
 ## How it works:
   Run main.py. In editor you can open gcodes files. It can hightlight syntax.
-  Push button "Create image" (Ctrl+G) to create image.
+  Push button "Show image" (Ctrl+G) to show image.
   
 ## License:
   Project License can be found [here](LICENSE.md).
