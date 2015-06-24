@@ -2,10 +2,7 @@
 ##########
 *.py[cod]
 __pycache__
-.ropeproject
-gcode/.rope*
-gcode/.ropeproject
-gcode/.ropeproject/*
+*.log
 
 # Python files #
 ###############
@@ -14,9 +11,3 @@ gcode/.ropeproject/*
 # setup.py dist directory
 dist
 build
-
-# Images #
-##########
-# they are too big
-gcode/images
-*.gif

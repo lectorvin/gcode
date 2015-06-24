@@ -1,3 +1,13 @@
+# gradient.py
+#!/usr/bin/python
+import logging
+
+log = 'log.log'
+logging.basicConfig(
+    format='%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(message)s',
+    level=logging.DEBUG, filename=log)
+
+
 def RGB_to_gl(RGB, p=0.9):
     ''' [255, 255, 255] -> [1, 1, 1, p] '''
     color = [round(float(i)/255., 2) for i in RGB] + [float(p)]
@@ -5,7 +15,7 @@ def RGB_to_gl(RGB, p=0.9):
 
 
 def main(start=[0.0, 1.0, 0, 0.8], finish=[1.0, 0.0, 0, 0.9], n=40):
-    '''Returns a gradient list of (n) colors between
+    ''' Returns a gradient list of (n) colors between
     two colors. Start and finish should be the array of colors '''
     s = start
     f = finish
@@ -23,6 +33,10 @@ def main(start=[0.0, 1.0, 0, 0.8], finish=[1.0, 0.0, 0, 0.9], n=40):
 
 
 if __name__ == '__main__':
+    with open(log, 'w') as f:
+        pass
+    logging.debug('Test file')
     gradient = main([0.0, 1.0, 0.0, 0.8], [1.0, 0.0, 0.0, 0.9])
     for color in gradient:
         print(color)
+    logging.debug('Test ends')

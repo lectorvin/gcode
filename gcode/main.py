@@ -1,10 +1,17 @@
+# main.py
+#!/usr/bin/python
 import sys
 import re
+import logging
 import gcode
 
 from pyqtgraph.Qt import QtGui, QtCore
 
 icons = {'icon': 'icons/icon.png', 'exit': 'icons/exit.png'}
+log = "log.log"
+logging.basicConfig(
+    format='%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(message)s',
+    level=logging.DEBUG, filename=log)
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -73,39 +80,60 @@ class MainWindow(QtGui.QMainWindow):
         fl = QtGui.QFileDialog.getOpenFileName(self, 'Open file', './gcodes',
                                                'Text Files (*.gcode *.txt)')
         if fl:
-            self.editor.setText(open(fl).read())
+            try:
+                logging.debug('Open file: {}'.format(str(fl)))
+                self.editor.setText(open(fl).read())
+            except IOError:
+                logging.error('Try to open non-existent file')
+                self.message('Error', 'Non-existent file')
+        else:
+            logging.error('Try to open file with null filename')
 
     def saveFile(self):
         fl = QtGui.QFileDialog.getSaveFileName(self, 'Save as', './gcodes',
                                                '*.gcode')
         if fl:
+            logging.debug('Save file: {}'.format(str(fl)))
             with open(fl, 'w') as f:
                 f.write(self.editor.toPlainText())
+        else:
+            logging.error('Try to save file with null filename')
 
     def closeEvent(self, event):
+        logging.debug('Closing main window...')
         reply = QtGui.QMessageBox.question(self, 'Message',
                                            "Are you sure to quit?",
                                            QtGui.QMessageBox.No,
                                            QtGui.QMessageBox.Yes)
         if reply == QtGui.QMessageBox.Yes:
+            logging.debug('The end')
             event.accept()
         else:
+            logging.debug('or not')
             event.ignore()
 
     def check_func(self):
         valid = gcode.gcode(str(self.editor.toPlainText())).check()
-        self.message("Result", valid and "Valid g-code" or "Invalid g-code")
+        message = valid and "Valid Gcode" or "Invalid Gcode"
+        logging.debug('Checked if Gcode is valid. Result - {}'.format(message))
+        self.message("Result", message)
 
     def delCom(self):
+        logging.debug('Delete comments from text')
         self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
 
     def showImage(self):
-        if (str(self.editor.toPlainText())):
-            gcode.gcode(str(self.editor.toPlainText())).saveImage()
+        logging.debug('Show image')
+        try:
+            if (str(self.editor.toPlainText())):
+                gcode.gcode(str(self.editor.toPlainText())).saveImage()
+        except gcode.GcodeError:
+            self.message('Error', "Invalid g-code")
 
     def message(self, name, message):
         reply = QtGui.QMessageBox.question(self, name, message,
                                            QtGui.QMessageBox.Yes)
+        return reply
 
 
 class HighlightingRule(object):
@@ -189,6 +217,9 @@ class MyHighlighter(QtGui.QSyntaxHighlighter):
 
 
 if __name__ == "__main__":
+    with open(log, 'w') as f:
+        pass
+    logging.debug('Program starts')
     app = QtGui.QApplication(sys.argv)
     main = MainWindow()
     main.show()
