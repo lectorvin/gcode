@@ -32,7 +32,11 @@ class App(gl.GLViewWidget):
         self.connect(self.timer, QtCore.SIGNAL("timeout()"),
                      self.draw_image)
 
-    def main(self):
+    def show_image(self):
+        self.plt.setData(pos=self.data, color=self.colors)
+        self.show()
+
+    def drawing(self):
         logging.debug('Start drawing')
         self.show()
         self.timer.start(self.time)

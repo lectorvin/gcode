@@ -46,6 +46,9 @@ class MainWindow(QtGui.QMainWindow):
         self.show_image = QtGui.QAction('Show image', self, shortcut="Ctrl+G",
                                         statusTip='Show image',
                                         triggered=self.showImage)
+        self.draw = QtGui.QAction('Show process', self, shortcut="Ctrl+T",
+                                  statusTip='Show process of drawing image',
+                                  triggered=self.drawImage)
 
         menubar = self.menuBar()
         fl = menubar.addMenu('&File')
@@ -55,11 +58,13 @@ class MainWindow(QtGui.QMainWindow):
         fl = menubar.addMenu('&Options')
         fl.addAction(self.check)
         fl.addAction(self.del_com)
+        fl.addAction(self.draw)
         fl.addAction(self.show_image)
 
         toolbar = self.addToolBar("Actions")
         toolbar.addAction(self.open)
         toolbar.addAction(self.save)
+        toolbar.addAction(self.draw)
         toolbar.addAction(self.show_image)
         toolbar.addAction(self.exit)
         # end
@@ -122,13 +127,21 @@ class MainWindow(QtGui.QMainWindow):
         logging.debug('Delete comments from text')
         self.editor.setText(gcode.gcode(self.editor.toPlainText()).del_comm())
 
+    def drawImage(self):
+        logging.debug('Show process of drawing image')
+        try:
+            if (str(self.editor.toPlainText())):
+                gcode.gcode(str(self.editor.toPlainText())).drawing()
+        except gcode.GcodeError as e:
+            self.message('Error', e.message)
+
     def showImage(self):
         logging.debug('Show image')
         try:
             if (str(self.editor.toPlainText())):
-                gcode.gcode(str(self.editor.toPlainText())).saveImage()
-        except gcode.GcodeError:
-            self.message('Error', "Invalid g-code")
+                gcode.gcode(str(self.editor.toPlainText())).show_image()
+        except gcode.GcodeError as e:
+            self.message('Error', e.message)
 
     def message(self, name, message):
         reply = QtGui.QMessageBox.question(self, name, message,

@@ -1,11 +1,5 @@
 # gradient.py
 #!/usr/bin/python
-import logging
-
-log = 'log.log'
-logging.basicConfig(
-    format='%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(message)s',
-    level=logging.DEBUG, filename=log)
 
 
 def RGB_to_gl(RGB, p=0.9):
@@ -33,6 +27,13 @@ def main(start=[0.0, 1.0, 0, 0.8], finish=[1.0, 0.0, 0, 0.9], n=40):
 
 
 if __name__ == '__main__':
+    import logging
+
+    log = 'log.log'
+    logging.basicConfig(
+        format='%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(message)s',
+        level=logging.DEBUG, filename=log)
+
     with open(log, 'w') as f:
         pass
     logging.debug('Test file')

@@ -12,78 +12,15 @@ log = "log.log"
 logging.basicConfig(
     format='%(filename)s[LINE:%(lineno)d]# %(levelname)-8s %(message)s',
     level=logging.DEBUG, filename=log)
-MIN_COLOR = [0.0, 0.0, 1.0, 0.9]
-MAX_COLOR = [1.0, 0.0, 0.0, 0.9]
-current_feedrate = 0
-current_color = 0
+MIN_COLOR = [0.0, 0.0, 1.0, 1.0]
+MAX_COLOR = [1.0, 0.0, 0.0, 1.0]
 
 
 class GcodeError(Exception):
     """ Exception for invalid g-codes """
-    def __init__(self):
-        logging.error('Invalid g-code')
-
-
-def getColorLine(dot1, dot2):    # generate all dots of line
-    """
-    Count dots, which are lies on line.
-
-    Parameters
-    ----------
-    dot1 : array_like
-        Coordinates of the beginning of line (x, y, z)
-    dot2 : array_like
-        Coordinates of the end of line (x, y, z)
-
-    Returns
-    -------
-    coords : array of dtype float
-        Dots, which are lies on line.
-
-    Notes
-    -----
-    Return 100 dots
-    """
-    global current_feedrate, current_color
-    x1, y1, z1, feed1 = dot1
-    x2, y2, z2, feed2 = dot2
-    coords = []
-    x = x1
-    step = (x2-x1) / 100
-
-    if current_feedrate == 0:
-        start_color = MIN_COLOR
-        if feed2 > feed1:
-            finish_color = MAX_COLOR
-        else:
-            finish_color = MIN_COLOR
-    else:
-        if feed2 > feed1:
-            start_color = MIN_COLOR
-            finish_color = MAX_COLOR
-        elif feed1 > feed2:
-            start_color = MAX_COLOR
-            finish_color = MIN_COLOR
-        else:   # feed1 == feed2
-            if feed2 == current_feedrate:
-                start_color = finish_color = current_color
-
-    current_color = finish_color
-    current_feedrate = feed2
-    color_list = grad(start_color, finish_color, n=101)
-
-    i = 0
-    while x < x2:
-        dot = [0, 0, 0, 0, 0, 0, 0]   # x, y, z, r, g, b, p
-        dot[0] = x
-        dot[1] = float((x-x1)*(y2-y1) / (x2-x1)) + y1
-        dot[2] = float((x-x1)*(z2-z1) / (x2-x1)) + z1
-        dot[3:7] = color_list[i]
-        coords.append(dot)
-        x += step
-        i += 1
-
-    return coords
+    def __init__(self, message):
+        self.message = message
+        logging.error(self.message)
 
 
 class gcode(object):
@@ -110,6 +47,9 @@ class gcode(object):
     text : string_like
         Gcodes.
     """
+    current_feedrate = 0
+    current_color = 0
+    speed = 50  # not speed, 1/speed
 
     def __init__(self, text):
         self._text = str(text)
@@ -128,7 +68,7 @@ class gcode(object):
         """ Delete all comments from text """
         logging.debug('Delete comments from text')
         if not(self.check()):
-            raise GcodeError()
+            raise GcodeError("Invalid g-codes")
         temp = []
         comment = re.compile(';\ .*')
         for line in self.blocks:
@@ -147,7 +87,7 @@ class gcode(object):
         """ Return all coordinates from self.blocks """
         logging.debug('Get coordinates from text')
         result = []
-        blocks = list(map(str, self.del_comm().split('\n')))
+        blocks = self.del_comm(blocks=True)
         coor = re.compile('[FXYZ][+-]?[0-9]+(\.[0-9]+)?')
         for line in blocks:
             coord_line = False
@@ -173,6 +113,7 @@ class gcode(object):
         gc = self.coordinates
         coords = []
         zmin = ymin = xmin = self.fmin = 999999
+        self.fmax = 0
         for line in gc:
             temp = [None, None, None, None]  # X, Y, Z, Feedrate
             for c in line:
@@ -186,8 +127,9 @@ class gcode(object):
                     temp[2] = float(c[1:])
                     zmin = min(zmin, temp[2])
                 elif c.startswith('F'):
-                    temp[3] = float(c[1:])
+                    temp[3] = int(float(c[1:]))
                     self.fmin = min(self.fmin, temp[3])
+                    self.fmax = max(self.fmax, temp[3])
             if ((temp[0] is not None) or (temp[1] is not None) or
                (temp[2] is not None) or (temp[3] is not None)):
                 if coords:
@@ -201,40 +143,128 @@ class gcode(object):
                         temp[3] = coords[-1][3]
                 coords.append(temp)
 
+        if (self.fmin == 999999) or (self.fmax == 0):
+            raise GcodeError('Please check feedrate')
+        if (xmin == ymin == zmin == 999999):
+            raise GcodeError('Please check coordinates')
+        if xmin == 999999:
+            xmin = 0
+        if ymin == 999999:
+            ymin = 0
+        if zmin == 999999:
+            zmin = 0
+
         for i in coords:   # if something is still 0
             if i[0] is None:
-                i[0] = xmin * 2  # min*2 - min
+                i[0] = xmin
             if i[1] is None:
-                i[1] = ymin * 2
+                i[1] = ymin
             if i[2] is None:
-                i[2] = zmin * 2
+                i[2] = zmin
             if i[3] is None:
-                i[3] = self.fmin * 2
+                i[3] = self.fmin
             i[0] -= xmin
             i[1] -= ymin
             i[2] -= zmin
             i[3] -= self.fmin
 
+        self.fmax -= self.fmin
+        self.colors_list = grad(MIN_COLOR, MAX_COLOR, self.fmax+1)
+
         dots = []
         for i in range(len(coords)):
             temp = []
             if i != len(coords)-1:
-                temp = getColorLine(coords[i], coords[i+1])
+                temp = self.getColorLine(coords[i], coords[i+1])
             if temp:
                 dots.extend(temp)
 
         return dots
 
-    def saveImage(self):
-        logging.debug('Show image')
+    def get_data(self):
+        logging.debug('Get data')
         dots = np.array(self.get_dots())
-        logging.debug(str(len(dots))+" dots to draw")
         data = dots[:, :3]
         colors = dots[:, 3:]
         if len(dots):
             data = np.array([[x-40 for x in i] for i in data])
-            a = opengl.App(data, colors)
-            a.main()
+
+        return data, colors
+
+    def drawing(self):
+        data, colors = self.get_data()
+        logging.debug(str(len(data))+" dots to draw")
+        a = opengl.App(data, colors)
+        a.drawing()
+
+    def show_image(self):
+        data, colors = self.get_data()
+        logging.debug(str(len(data))+" dots to show")
+        a = opengl.App(data, colors)
+        a.show_image()
+
+    def getColorLine(self, dot1, dot2):    # generate all dots of line
+        """
+        Count dots, which are lies on line.
+
+        Parameters
+        ----------
+        dot1 : array_like
+            Coordinates of the beginning of line (x, y, z)
+        dot2 : array_like
+            Coordinates of the end of line (x, y, z)
+
+        Returns
+        -------
+        coords : array of dtype float
+            Dots, which are lies on line.
+
+        Notes
+        -----
+        Return {self.speed} dots
+        """
+        x1, y1, z1, feed1 = dot1
+        x2, y2, z2, feed2 = dot2
+        min_color = self.colors_list[feed1]
+        max_color = self.colors_list[feed2]
+
+        # NB! feed1,feed2 >= 0; 0 = dot[3]-fmin
+        # self.colors_list = grad(MIN_COLOR, MAX_COLOR, self.fmax)
+        if self.current_feedrate == 0:
+            start_color = min_color
+            if feed2 > feed1:
+                finish_color = max_color
+            else:
+                finish_color = min_color
+        else:
+            if feed2 > feed1:
+                start_color = min_color
+                finish_color = max_color
+            elif feed1 > feed2:
+                start_color = max_color
+                finish_color = min_color
+            else:   # feed1 == feed2
+                if feed2 == self.current_feedrate:
+                    start_color = finish_color = self.current_color
+
+        self.current_color = finish_color
+        self.current_feedrate = feed2
+        color_list = grad(start_color, finish_color, n=self.speed+1)
+
+        i = 0
+        coords = []
+        stepx = (x2-x1) / self.speed
+        stepy = (y2-y1) / self.speed
+        stepz = (z2-z1) / self.speed
+        for i in range(self.speed):
+            dot = [0, 0, 0, 0, 0, 0, 0]   # x, y, z, r, g, b, p
+            dot[0] = x1 + i*stepx
+            dot[1] = y1 + i*stepy
+            dot[2] = z1 + i*stepz
+            dot[3:7] = color_list[i]
+            coords.append(dot)
+
+        return coords
 
 
 if __name__ == "__main__":
@@ -265,6 +295,10 @@ if __name__ == "__main__":
             with open(self.gcodes[2]) as f:
                 self.assertTrue(gcode(f.read()).check())
 
+        def test_d(self):
+            with open(self.gcodes[3]) as f:
+                self.assertTrue(gcode(f.read()).check())
+
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
     print('1.000.000 checked codes - ' +
@@ -272,7 +306,8 @@ if __name__ == "__main__":
     a = QtGui.QApplication(sys.argv)
     print('1 generated image - ' +
           str(
-              timeit.timeit(gcode('G1 X1\nG1 Y1\nG1 X2 Y3 Z10').saveImage,
+              timeit.timeit(gcode(
+                  'G1 X1 F100\nG1 Y1 F120\nG1 X2 Y3 Z10 F200').show_image,
                             number=1))
           )
     logging.debug('Test ends')
